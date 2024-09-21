@@ -1,0 +1,57 @@
+<html>
+    <head> </head>
+    <body>
+        <h1>Zig Wasm module test</h1>
+        <pre>
+#[no_mangle]
+pub extern "C" fn output_argument(a: &mut u32) -> bool {
+    *a = 33;
+    return false;
+}
+</pre
+        >
+        <hr />
+        <div id="result"></div>
+        <div id="pointer"></div>
+        <hr />
+        <a href="../index.html">Back</a>
+        <script>
+            (async () => {
+                // Fetch and instantiate the WebAssembly module
+                const response = await fetch("rust.wasm");
+                const buffer = await response.arrayBuffer();
+
+                // Use instantiate instead of compile for simplicity
+                const { instance, module } = await WebAssembly.instantiate(
+                    buffer,
+                    {
+                        env: { memory: new WebAssembly.Memory({ initial: 1 }) },
+                    },
+                );
+
+                // Memory setup
+                let memory = instance.exports.memory; // Use the memory exported from the module, if applicable
+                let memoryView = new DataView(memory.buffer);
+                let aPtr = 0; // Set pointer aligned to 4-byte boundary
+
+                // Initialize memory at aPtr
+                memoryView.setUint32(aPtr, 0, true); // Set initial value at aPtr to 0
+
+                // Call the Odin function
+                const result = instance.exports.output_argument(aPtr); // Execute the exported function
+
+                const resultElement = document.getElementById("result");
+                const pointerElement = document.getElementById("pointer");
+                // Log the results
+                resultElement.innerText = `Return value from WebAssembly function: ${result}`;
+                console.log(
+                    `Return value from WebAssembly function: ${result}`,
+                ); // Should be false (0)
+                pointerElement.innerText = `Value at aPtr after function call: ${memoryView.getUint32(aPtr, true)}`;
+                console.log(
+                    `Value at aPtr after function call:${memoryView.getUint32(aPtr, true)}`,
+                ); // Should be 33
+            })();
+        </script>
+    </body>
+</html>
